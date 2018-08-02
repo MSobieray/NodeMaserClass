@@ -6,6 +6,7 @@
 const http = require('http');
 const url = require('url');
 const stringDecoder = require('string_decoder').StringDecoder
+const config = require('./config');
 
 // the server should respond to all requests with a string
 const server = http.createServer((req, res) => {
@@ -34,15 +35,64 @@ const server = http.createServer((req, res) => {
     });
     req.on('end', () => {
         buffer += decoder.end();
+        
+        // choose route handler, if route not found use notFound handler
+        const routeHandler = typeof(router[trimmedPath]) !== 'undefined' ? router[trimmedPath] : handlers.notFound;
 
-        // send a response 
-        res.end('Hello World\n');
-    
-        // log the request path
-        console.log("Request received with this payload", buffer);
+        // construct data object to send to handler
+
+        const data = {
+            trimmedPath,
+            queryStringObject,
+            method,
+            headers,
+            'payload': buffer
+        }
+        // route the request to the handler in the router
+
+        routeHandler(data, (statusCode, payload) => {
+            // use the status code called back by handler of default to 200
+            statusCode = typeof(statusCode) == 'number' ? statusCode : 200;
+
+            // use the payload called back by the handler of default to {}
+            payload = typeof(payload) == 'object' ? payload : {};
+
+            // Stringify the payload
+            payloadString = JSON.stringify(payload);
+
+            // Return the response
+            res.setHeader('Content-Type', 'application/json')
+            res.writeHead(statusCode);
+            // send a response 
+            res.end(payloadString);
+        
+            
+            console.log("Returning this response: ", statusCode, payloadString );
+
+        })
     })
 })
-// start the server, and have it listen on port 3000
-server.listen(3000, () => {
-    console.log('We Are Listening On Port 3000')
+// start the server
+server.listen(config.port, () => {
+    console.log(`We Are Listening On Port ${config.port} in ${config.envName} mode`)
 })
+
+// handlers
+
+let handlers = {}
+
+// sample handler
+handlers.sample = (data, callback) => {
+    // callback a http status code, and a payload object
+    callback(418, {'name': 'sample handler'});
+};
+
+handlers.notFound = (data, callback) => {
+    callback(404);
+};
+
+// Setup router
+
+const router = {
+    "sample": handlers.sample
+}
