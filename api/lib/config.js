@@ -9,14 +9,16 @@ const enviroments = {}
 enviroments.staging = {
   httpPort: 3000,
   httpsPort: 3001,
-  envName: "staging"
+  envName: "staging",
+  hashingSecret: "this is a secret"
 }
 
 // Production enviroment
 enviroments.production = {
   port: 5000,
   httpsPort: 5001,
-  envName: "production"
+  envName: "production",
+  hashingSecret: "this is a Prod secret"
 }
 
 // Determine which enviroment to export based upond the command line variable passed in NODE_ENV
